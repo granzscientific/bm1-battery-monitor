@@ -1,0 +1,9 @@
+packages:
+  granzscientific.bm1-base: !include base.yaml
+
+dashboard_import:
+  package_import_url: github://granzscientific/bm1-battery-monitor/gs-bm1-battery-monitor.yaml
+
+esphome:
+  name_add_mac_suffix: true
+
