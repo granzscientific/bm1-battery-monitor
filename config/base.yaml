@@ -1,22 +1,21 @@
 substitutions:
-  m_name: gs-bm1-battery-monitor
-  #m_prev_name: ${m_name}
-  m_friendly_name: "GS BM1 Battery Monitor"
-  m_api_key: "12345678"
-  m_ota_password: "12345678"
-  m_ap_password: "12345678"
+  name: gs-bm1-battery-monitor
+  #prev_name: ${name}
+  friendly_name: "GS BM1 Battery Monitor"
+  ota_password: "12345678"
+  ap_password: "12345678"
 
   # https://esphome.io/components/esphome.html#esphome-creators-project
-  m_project_name: GranzScientific.BM1-Battery-Monitor
-  m_project_ver_num: "1.0"
-  m_project_ver_let: a
+  project_name: GranzScientific.BM1-Battery-Monitor
+  project_ver_num: "1.0"
+  project_ver_let: a
 
 esphome:
   project:
-    name: ${m_project_name}
-    version: ${m_project_ver_num}(${m_project_ver_let})
-  name: ${m_name}
-  friendly_name: ${m_friendly_name}
+    name: ${project_name}
+    version: ${project_ver_num}(${project_ver_let})
+  name: ${name}
+  friendly_name: ${friendly_name}
   on_boot:
     then:
       - script.execute: watch_for_ota_update_mode
@@ -37,12 +36,10 @@ logger:
 # Enable Home Assistant API
 api:
   id: gs_api
-#  encryption:
-#    key: ${m_api_key}
 
 ota:
   - platform: esphome
-    password: ${m_ota_password}
+    password: ${ota_password}
 
 wifi:
   #networks:
@@ -50,12 +47,12 @@ wifi:
     #  password: !secret wifi_password
     #- ssid: !secret wifi_ssid_office
     #  password: !secret wifi_password_office
-  #use_address: ${m_prev_name}.local
+  #use_address: ${prev_name}.local
 
   # Enable fallback access point (captive portal) in case wifi connection fails
   ap:
-    ssid: ${m_friendly_name}
-    password: ${m_ap_password}
+    ssid: ${friendly_name}
+    password: ${ap_password}
 
 web_server:
   port: 80
