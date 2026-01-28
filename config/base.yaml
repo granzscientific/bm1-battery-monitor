@@ -1,11 +1,10 @@
 substitutions:
   name: gs-bm1-battery-monitor
-  #prev_name: ${name}
   friendly_name: "GS BM1 Battery Monitor"
   ota_password: "12345678"
   ap_password: "12345678"
 
-  # https://esphome.io/components/esphome.html#esphome-creators-project
+  # See https://esphome.io/components/esphome.html#esphome-creators-project
   project_name: GranzScientific.BM1-Battery-Monitor
   project_ver_num: "1.0"
   project_ver_let: a
@@ -42,13 +41,6 @@ ota:
     password: ${ota_password}
 
 wifi:
-  #networks:
-    #  - ssid: !secret wifi_ssid
-    #  password: !secret wifi_password
-    #- ssid: !secret wifi_ssid_office
-    #  password: !secret wifi_password_office
-  #use_address: ${prev_name}.local
-
   # Enable fallback access point (captive portal) in case wifi connection fails
   ap:
     ssid: ${friendly_name}
