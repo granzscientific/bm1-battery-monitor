@@ -1,7 +1,7 @@
 substitutions:
   name: gs-bm1-battery-monitor
   friendly_name: "GS BM1 Battery Monitor"
-  ota_password: "12345678"
+  #ota_password: "aba2a00dc606d376d3fd12a4771e7fd5"
   ap_password: "12345678" 
   # Default API key.  Override this with your unique key.
   api_key: "F3z6u/6lpcfxbihFBCLGjActwU8pILiaxneFzLw+T1A="
@@ -43,7 +43,7 @@ api:
 
 ota:
   - platform: esphome
-    password: ${ota_password}
+    #password: ${ota_password}
 
 wifi:
   # Enable fallback access point (captive portal) in case wifi connection fails
@@ -170,7 +170,7 @@ script:
   # Script that controls the timer for how long we look for the HA connection
   - id: startup_connection_timer
     then:
-      - delay: 2min
+      - delay: 5min
   # Script that runs on boot to watch for OTA update flag, which will prevent the device from going into deep sleep
   - id: watch_for_ota_update_mode
     then:
