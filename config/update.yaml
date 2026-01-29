@@ -6,4 +6,3 @@ dashboard_import:
 
 esphome:
   name_add_mac_suffix: true
-

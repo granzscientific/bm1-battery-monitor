@@ -1,0 +1,191 @@
+
+# -----------------------------------------------------------------------------
+# Add this to your Home Assistant configuration to use the OTA Update Mode feature:
+# -----------------------------------------------------------------------------
+# input_boolean:
+#   ota_update_mode:
+#     name: "OTA Update Mode"
+#     initial: off
+#     icon: mdi:nature-people
+
+# To use this module, you must have these definitions in your main yaml file:
+# api:
+#   id: gs_api
+# wifi:
+#   id: wifi_wificomponent_id # For some reason, if any other id name is used this won't compile
+
+# You may override these in your main yaml file
+substitutions:
+  wait_for_initial_setup_duration: 5min
+  wait_for_wifi_duration: 10s
+  wait_for_api_connection_duration: 30s
+  wait_for_ota_update_mode_duration: 5s
+  sleep_duration: 30min
+  home_assistant_ota_entity_id: input_boolean.ota_update_mode
+
+# -----------------------------------------------------------------------------
+# Everything below is related to OTA update mode, which inhibits deep-sleep
+# when Home Assistant '${home_assistant_ota_entity_id}' is set 'on'.
+# Normally, nothing below should need to be modified.
+# -----------------------------------------------------------------------------
+
+# Deep sleep configuration
+# Note that the script below for OTA updates will inhibit this so run_duration here is irrelevant
+deep_sleep:
+  id: deep_sleep_1
+  run_duration: 45s
+  sleep_duration: ${sleep_duration}
+
+# Text sensors
+text_sensor:
+  - platform: uptime
+    id: uptime_sensor
+    name: "Uptime"
+    update_interval: 1s
+    internal: True # Hide from home assisstant
+  # This text_sensor controls re-enabling deep sleep when the HA service indicates
+  # there is no longer an OTA update available.
+  - platform: homeassistant
+    name: "OTA Update Mode"
+    entity_id: ${home_assistant_ota_entity_id}
+    id: ota_update_mode
+    on_value:
+      then:
+        - if:
+            condition:
+              text_sensor.state:
+                id: ota_update_mode
+                state: 'on'
+            then:
+              - logger.log:
+                  format: "OTA update mode active -- preventing sleep."
+                  level: WARN
+              - deep_sleep.prevent: deep_sleep_1
+            else:
+              - logger.log:
+                  format: "OTA update mode inactive -- will sleep between readings."
+                  level: WARN
+              - deep_sleep.allow: deep_sleep_1
+
+# Scripts
+script:
+  # Script that controls the timer for how long to wait for initial setup
+  - id: scr_wait_for_initial_setup
+    then:
+      - delay: ${wait_for_initial_setup_duration}
+  # Script that controls the timer for how long to wait for wifi
+  - id: scr_timer_wait_for_wifi
+    then:
+      - delay: ${wait_for_wifi_duration}
+  # Script that controls the timer for how long we look for the HA connection
+  - id: scr_timer_wait_for_api_connection
+    then:
+      - delay: ${wait_for_api_connection_duration}
+  # Script that controls the timer for how long we look for the HA connection
+  - id: scr_timer_wait_for_ota_update_mode
+    then:
+      - delay: ${wait_for_ota_update_mode_duration}
+  # Script that runs on boot to control if we go to sleep or stay awake (for setup, OTA update etc.)
+  - id: scr_sleep_control
+    then:
+      - deep_sleep.prevent: deep_sleep_1
+      - delay: 1s # allow other tasks to get going first
+      # First check if WiFi credentials are stored
+      - if:
+          condition:
+            lambda: 'return !id(wifi_wificomponent_id).has_sta();'
+          then:
+            - logger.log:
+                format: "No WiFi credentials are stored -- staying awake for ${wait_for_initial_setup_duration} to allow initial setup."
+                level: ERROR
+            # Force AP on (this may not be needed because of default behavior)
+            - lambda: |-
+                id(wifi_wificomponent_id).set_ap_timeout(1);
+                id(wifi_wificomponent_id).enable();
+            #- delay: ${wait_for_initial_setup_duration}
+            - script.execute: scr_wait_for_initial_setup
+            - while:
+                condition:
+                  lambda: 'return (id(scr_wait_for_initial_setup).is_running() && !id(wifi_wificomponent_id).is_connected());'
+                then:
+                  - logger.log:
+                      format: "Waiting for initial setup..."
+                      level: WARN
+                  - delay: 1s
+            - if:
+                condition:
+                  lambda: 'return !id(wifi_wificomponent_id).is_connected();'
+                then:
+                  - deep_sleep.enter: deep_sleep_1
+      # Check for WiFi connection
+      - script.execute: scr_timer_wait_for_wifi
+      # While our timer is running AND we haven't yet connected to WiFi
+      - while:
+          condition:
+            lambda: 'return (id(scr_timer_wait_for_wifi).is_running() && !id(wifi_wificomponent_id).is_connected());'
+          then:
+            - logger.log:
+                format: "Waiting for WiFi connection..."
+                level: WARN
+            - delay: 1s
+      - if:
+          condition:
+            lambda: 'return !id(wifi_wificomponent_id).is_connected();'
+          then:
+            # Not connected to WiFi
+            - if:
+                condition:
+                  lambda: 'return id(wifi_wificomponent_id).has_sta();'
+                then:
+                  - logger.log:
+                      format: "WiFi not connected, but credentials are stored -- sleeping to save battery."
+                      level: WARN
+                  - deep_sleep.enter: deep_sleep_1
+      # Connected to WiFi
+      - script.execute: scr_timer_wait_for_api_connection
+      # While our timer is running AND we aren't connected to home assistant
+      - while:
+          condition:
+            lambda: 'return (id(scr_timer_wait_for_api_connection).is_running() && !id(gs_api).is_connected());'
+          then:
+            - logger.log:
+                format: "Waiting for API connection..."
+                level: WARN
+            - delay: 1s
+      - if:
+          condition:
+            lambda: 'return !id(gs_api).is_connected();'
+          then:
+            # API not connected
+            - logger.log:
+                format: "No API never connection -- sleeping to save battery."
+                level: WARN
+            - deep_sleep.enter: deep_sleep_1
+      - script.execute: scr_timer_wait_for_ota_update_mode
+      # While our timer is running AND we don't have any state from Home Assistant for 'ota_update_mode' entity
+      - while:
+          condition:
+            lambda: 'return (id(scr_timer_wait_for_ota_update_mode).is_running() && id(ota_update_mode).state == "");'
+          then:
+            - logger.log:
+                format: "Waiting for Home Assistant '${home_assistant_ota_entity_id}' state..."
+                level: WARN
+            - delay: 1s
+            - homeassistant.service:
+                service: 'homeassistant.update_entity'
+                data:
+                  entity_id: ${home_assistant_ota_entity_id}
+      - if:
+          condition:
+            text_sensor.state:
+              id: ota_update_mode
+              state: ''
+          then:
+            # No state or unexpected state (not 'on'/'off'), probably be unconfigured in HA
+            - logger.log:
+                format: "Home Assistant '${home_assistant_ota_entity_id}' not found."
+                level: ERROR
+            - logger.log:
+                format: "Please read the manual to configure OTA update mode switch in Home Assistant."
+                level: ERROR
+            - deep_sleep.allow: deep_sleep_1

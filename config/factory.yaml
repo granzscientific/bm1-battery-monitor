@@ -8,18 +8,20 @@ packages:
 esphome:
   on_boot:
     then:
-      - script.execute: factory_test
+      - script.execute: scr_factory_test
 
 script:
   # factory test script
-  - id: factory_test
+  - id: scr_factory_test
     then:
       - if:
           condition:
             lambda: 'return id(first_boot);'
           then:
             # start AP immediately
-            - lambda: 'wifi_wificomponent_id->set_ap_timeout(1);'
+            - lambda: |-
+                id(wifi_wificomponent_id).set_ap_timeout(1);
+                id(wifi_wificomponent_id).enable();
 
 globals:
   # keep track of it if we'd booted once before (for factory test purposes)
