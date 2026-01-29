@@ -1,11 +1,6 @@
 substitutions:
   name: gs-bm1-battery-monitor
   friendly_name: "GS BM1 Battery Monitor"
-  # **** No OTA password by default.  You should add one in your config!
-  #ota_password: "aba2a00dc606d376d3fd12a4771e7fd5"
-  ap_password: "12345678"
-  # **** Default API key.  Override this with your unique key!
-  api_key: "F3z6u/6lpcfxbihFBCLGjActwU8pILiaxneFzLw+T1A="
 
   # See https://esphome.io/components/esphome.html#esphome-creators-project
   project_name: GranzScientific.BM1-Battery-Monitor
@@ -50,7 +45,8 @@ logger:
 api:
   id: gs_api
   encryption:
-    key: ${api_key}
+    # **** Default API key.  Override this with your unique key!
+    key: F3z6u/6lpcfxbihFBCLGjActwU8pILiaxneFzLw+T1A=
 
 # https://esphome.io/components/ota.html
 ota:
@@ -58,6 +54,7 @@ ota:
     on_error:
       - button.press: restart_button
   - platform: esphome
+    # **** No OTA password by default.  You should add one in your config!
     on_error:
       - button.press: restart_button
 
@@ -66,7 +63,7 @@ wifi:
   # Enable fallback access point (captive portal) in case wifi credentials missing
   ap:
     ssid: ${friendly_name}
-    password: ${ap_password}
+    password: "12345678"
     # Disable AP when we have wifi credentials stored in nvmem
     # Note that, after a factory reset we still have an AP no matter what
     ap_timeout: 0s
