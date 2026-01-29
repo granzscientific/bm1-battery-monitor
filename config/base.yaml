@@ -44,9 +44,9 @@ logger:
 # Enable Home Assistant API
 api:
   id: gs_api
-  encryption:
+  #encryption:
     # **** Default API key.  Override this with your unique key!
-    key: F3z6u/6lpcfxbihFBCLGjActwU8pILiaxneFzLw+T1A=
+  #  key: F3z6u/6lpcfxbihFBCLGjActwU8pILiaxneFzLw+T1A=
 
 # https://esphome.io/components/ota.html
 ota:
