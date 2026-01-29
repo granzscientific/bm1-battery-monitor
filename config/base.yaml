@@ -50,9 +50,6 @@ api:
 
 # https://esphome.io/components/ota.html
 ota:
-  #- platform: web_server
-  #  on_error:
-  #    - button.press: restart_button
   - platform: esphome
     # **** No OTA password by default.  You should add one in your config!
     on_error:
@@ -70,8 +67,7 @@ wifi:
 
 web_server:
   port: 80
-  # embed the web server's js file to allow it work without internet access
-  local: true
+  local: true # Embed the web server data to allow it work without internet access
   ota: false  # Disables OTA through regular web interface
 
 # Captive portal automatically enables web server OTA platform
