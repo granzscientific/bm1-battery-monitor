@@ -7,7 +7,7 @@ substitutions:
   project_ver_num: "1.0"
   project_ver_let: a
 
-  # ota.yaml module overrides
+  # ota-sleep-control.yaml module overrides
   wait_for_initial_setup_duration: 5min
   wait_for_wifi_duration: 10s
   wait_for_api_connection_duration: 30s
@@ -44,9 +44,7 @@ logger:
 # Enable Home Assistant API
 api:
   id: gs_api
-  #encryption:
-    # **** Default API key.  Override this with your unique key!
-  #  key: F3z6u/6lpcfxbihFBCLGjActwU8pILiaxneFzLw+T1A=
+  # **** No API encryption key by default.  You should add one in your config!
 
 # https://esphome.io/components/ota.html
 ota:
