@@ -7,6 +7,9 @@ substitutions:
   project_ver_num: "1.0"
   project_ver_let: a
 
+  # BM1 specific configuration
+  battery_low_warning_level: 11.8
+
   # ota-sleep-control.yaml module overrides
   wait_for_initial_setup_duration: 5min
   wait_for_wifi_duration: 10s
@@ -40,6 +43,11 @@ preferences:
 
 # Enable logging
 logger:
+  level: DEBUG
+  logs:
+    # Prevent spamming from ntc_power switch
+    switch: INFO
+    rtttl: INFO
 
 # Enable Home Assistant API
 api:
@@ -94,8 +102,8 @@ switch:
     name: "Factory Reset"
   # Switch to power NTC to avoid battery drain when not being read
   - platform: gpio
-    pin: GPIO3
     id: ntc_pwr
+    pin: GPIO3
     internal: True # Hide from home assistant
 
 # Sensors
@@ -106,9 +114,11 @@ sensor:
     update_interval: 5s
   # Battery voltage from voltage-divider
   - platform: adc
+    id: battery_sensor
     name: "Battery Voltage"
     pin: GPIO0
-    update_interval: 5s
+    # Never update, since we trigger it from the interval block below
+    update_interval: never
     attenuation: 12dB
     samples: 10
     filters:
@@ -148,27 +158,57 @@ sensor:
       reference_resistance: 10kOhm
   - platform: resistance
     id: ntc_resistance_sensor
-    name: "Resistance Sensor"
+    name: "NTC Resistance"
     sensor: ntc_source_sensor
     configuration: DOWNSTREAM
     resistor: 10.0kOhm
     internal: True # Hide from home assisstant
   - platform: adc
-    pin: GPIO1
     id: ntc_source_sensor
+    name: "NTC Voltage"
+    pin: GPIO1
     # Never update, since we trigger it from the interval block below
     update_interval: never
     attenuation: 12dB
+    internal: True # Hide from home assisstant
 
-# Interval to read NTC
+# Intervals to read voltage, temperature and control buzzer and LED
 interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            lambda: 'return (id(ota_sleep_control_state) == 2 || id(ota_sleep_control_state) == 3);'
+          then:
+            - output.turn_on: led_out
+          else:
+            - output.turn_off: led_out
   - interval: 5s
     then:
-      - output.turn_on: led_out
+      - delay: 1s
+      - if:
+          condition:
+            lambda: 'return (id(ota_sleep_control_state) == 0);'
+          then:
+            - output.turn_on: led_out
+      - component.update: battery_sensor
       - switch.turn_on: ntc_pwr
       - component.update: ntc_source_sensor
       - switch.turn_off: ntc_pwr
-      - output.turn_off: led_out
+      - if:
+          condition:
+            lambda: 'return (id(battery_sensor).state < ${battery_low_warning_level});'
+          then:
+            - logger.log:
+                format: "Battery voltage is %.1fV, below threshold of ${battery_low_warning_level}V"
+                args: [id(battery_sensor).state]
+                level: ERROR
+            - rtttl.play: 'two_short:d=4,o=5,b=100:16e6,16e6'
+      - if:
+          condition:
+            lambda: 'return (id(ota_sleep_control_state) == 0);'
+          then:
+            - output.turn_off: led_out
 
 # Configure the PWM outputs to drive the LED and buzzer
 output:
@@ -185,4 +225,4 @@ output:
 rtttl:
   output: buzzer_out
   id: buzzer
-  gain: 80%
+  gain: 100%
