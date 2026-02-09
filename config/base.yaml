@@ -8,7 +8,7 @@ substitutions:
   project_ver_let: a
 
   # BM1 specific configuration
-  battery_low_warning_level: 11.8
+  battery_low_warning_level: 11.5
 
   # ota-sleep-control.yaml module overrides
   wait_for_initial_setup_duration: 5min
@@ -178,14 +178,14 @@ interval:
     then:
       - if:
           condition:
-            lambda: 'return (id(ota_sleep_control_state) == 2 || id(ota_sleep_control_state) == 3);'
+            lambda: 'return (id(ota_sleep_control_state) != 0);'
           then:
             - output.turn_on: led_out
           else:
             - output.turn_off: led_out
   - interval: 5s
+    startup_delay: 5s
     then:
-      - delay: 1s
       - if:
           condition:
             lambda: 'return (id(ota_sleep_control_state) == 0);'
