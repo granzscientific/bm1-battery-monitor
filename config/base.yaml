@@ -118,6 +118,9 @@ sensor:
     id: battery_sensor
     name: "Battery Voltage"
     pin: GPIO0
+    icon: "mdi:car-battery"
+    device_class: "battery"
+    state_class: "measurement"
     accuracy_decimals: 1
     # Never update, since we trigger it from the interval block below
     update_interval: never
