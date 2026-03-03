@@ -8,7 +8,8 @@ substitutions:
   project_ver_let: a
 
   # BM1 specific configuration
-  battery_low_warning_level: 11.5
+  battery_low_warning_level_12V: 11.5
+  battery_low_warning_level_24V: 23.0
 
   # ota-sleep-control.yaml module overrides
   wait_for_initial_setup_duration: 5min
@@ -195,16 +196,30 @@ interval:
       - switch.turn_on: ntc_pwr
       - component.update: ntc_source_sensor
       - switch.turn_off: ntc_pwr
-      - if:
+      - if: # If voltage is about 18.0V, assume this is a 24V system
           condition:
-            lambda: 'return (id(battery_sensor).state < ${battery_low_warning_level});'
+            lambda: 'return (id(battery_sensor).state > 18.0f);'
           then:
-            - logger.log:
-                format: "Battery voltage is %.1fV, below threshold of ${battery_low_warning_level}V"
-                args: [id(battery_sensor).state]
-                level: ERROR
-            - rtttl.play: 'two_short:d=4,o=5,b=100:16e6,16e6'
-      - if:
+            - if: # If the voltage is below the 24V system threshold
+                condition:
+                  lambda: 'return (id(battery_sensor).state < ${battery_low_warning_level_24V});'
+                then:
+                  - logger.log:
+                      format: "Battery voltage is %.1fV, below threshold of ${battery_low_warning_level_24V}V"
+                      args: [id(battery_sensor).state]
+                      level: ERROR
+                  - rtttl.play: 'two_short:d=4,o=5,b=100:16e6,16e6'
+          else: # 12V system
+            - if: # If voltage is above 4.0V, but below the 12V system threshold (4.0V is to prevent beeping when connected to programmer)
+                condition:
+                  lambda: 'return ((id(battery_sensor).state > 4.0f) && (id(battery_sensor).state < ${battery_low_warning_level_12V}));'
+                then:
+                  - logger.log:
+                      format: "Battery voltage is %.1fV, below threshold of ${battery_low_warning_level_12V}V"
+                      args: [id(battery_sensor).state]
+                      level: ERROR
+                  - rtttl.play: 'two_short:d=4,o=5,b=100:16e6,16e6'
+      - if: # If we are done with the sleep control script, turn off the LED
           condition:
             lambda: 'return (id(ota_sleep_control_state) == 0);'
           then:
