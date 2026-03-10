@@ -109,9 +109,25 @@ switch:
 
 # Sensors
 sensor:
+  # WiFi signal strength/RSSI in dB
+  - platform: wifi_signal
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    entity_category: "diagnostic"
+    update_interval: 5s
+  #  WiFi signal strength in %
+  - platform: copy
+    source_id: wifi_signal_db
+    name: "WiFi Signal Strength"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: "diagnostic"
+    device_class: ""
   # ESP32 internal temperature sensor
   - platform: internal_temperature
     name: "MCU Internal Temperature"
+    entity_category: "diagnostic"
     update_interval: 5s
   # Battery voltage from voltage-divider
   - platform: adc
@@ -119,7 +135,6 @@ sensor:
     name: "Battery Voltage"
     pin: GPIO0
     icon: "mdi:car-battery"
-    device_class: "battery"
     state_class: "measurement"
     accuracy_decimals: 1
     # Never update, since we trigger it from the interval block below
@@ -127,12 +142,29 @@ sensor:
     attenuation: auto
     filters:
       - lambda: return ((x * 9.32) + 0.7); # voltage divider and diode drop
+  # Battery percentage (derived from voltage)
+  - platform: template
+    id: battery_percentage
+    name: "Battery Level"
+    icon: "mdi:car-battery"
+    device_class: "battery"
+    # Never update, since we trigger it from the interval block below
+    update_interval: never
+    unit_of_measurement: "%"
+    lambda: |-
+      float percentage = 100.0f;
+      if (id(battery_sensor).state > 18.0f) { // assume 24V system
+        percentage = ((id(battery_sensor).state - 18.0f) * 13.9f);
+      } else if (id(battery_sensor).state > 9.0f) { // assume 12V system
+        percentage = ((id(battery_sensor).state - 9.0f) * 27.8f);
+      }
+      return min(max(percentage, 0.0f), 100.0f);
   # PCB thermistor
   - platform: ntc
     name: "Ambient Temperature"
     sensor: ntc_resistance_sensor
     calibration:
-      b_constant: 3900
+      b_constant: 3950
       reference_temperature: 25°C
       reference_resistance: 10kOhm
   - platform: resistance
@@ -150,6 +182,19 @@ sensor:
     update_interval: never
     attenuation: 12dB
     internal: True # Hide from home assisstant
+
+# Text sensors
+text_sensor:
+  - platform: template
+    name: "System Type"
+    lambda: |-
+      if (id(battery_sensor).state > 18.0f) { // assume 24V system
+        return {"24V System"};
+      } else if (id(battery_sensor).state > 9.0f) { // assume 12V system
+        return {"12V System"};
+      }
+      return {"Low Voltage"};
+    update_interval: 5s
 
 # Intervals to read voltage, temperature and control buzzer and LED
 interval:
@@ -171,10 +216,11 @@ interval:
           then:
             - output.turn_on: led_out
       - component.update: battery_sensor
+      - component.update: battery_percentage
       - switch.turn_on: ntc_pwr
       - component.update: ntc_source_sensor
       - switch.turn_off: ntc_pwr
-      - if: # If voltage is about 18.0V, assume this is a 24V system
+      - if: # If voltage is above 18.0V, assume this is a 24V system
           condition:
             lambda: 'return (id(battery_sensor).state > 18.0f);'
           then:
