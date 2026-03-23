@@ -1,5 +1,5 @@
 substitutions:
-  name: gs-bm1-battery-monitor
+  name: gs-bm1
   friendly_name: "GS BM1 Battery Monitor"
 
   # See https://esphome.io/components/esphome.html#esphome-creators-project
