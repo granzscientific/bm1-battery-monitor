@@ -264,4 +264,4 @@ output:
 rtttl:
   output: buzzer_out
   id: buzzer
-  gain: 100%
+  gain: 70%
