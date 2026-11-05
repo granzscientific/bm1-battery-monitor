@@ -4,7 +4,7 @@ substitutions:
 
   # See https://esphome.io/components/esphome.html#esphome-creators-project
   project_name: GranzScientific.BM1-Battery-Monitor
-  project_ver_num: "1.0"
+  project_ver_num: "1.1"
   project_ver_let: a
 
   # BM1 specific configuration
