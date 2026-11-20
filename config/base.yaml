@@ -4,21 +4,21 @@ substitutions:
 
   # See https://esphome.io/components/esphome.html#esphome-creators-project
   project_name: GranzScientific.BM1-Battery-Monitor
-  project_ver_num: "1.1"
+  project_ver_num: "1.2"
   project_ver_let: a
 
   # BM1 specific configuration
   battery_low_warning_level_12V: 11.5
   battery_low_warning_level_24V: 23.0
 
-  # ota-sleep-control.yaml module overrides
+  # sleep-control module overrides
   wait_for_initial_setup_duration: 5min
   wait_for_wifi_duration: 10s
   wait_for_api_connection_duration: 30s
   sleep_duration: 30min
 
 packages:
-  granzscientific.bm1-ota: github://granzscientific/esphome-tools/config/sleep-control.yaml
+  granzscientific.sleep-control: github://granzscientific/esphome-tools/config/sleep-control.yaml
 
 esphome:
   project:
