@@ -15,11 +15,10 @@ substitutions:
   wait_for_initial_setup_duration: 5min
   wait_for_wifi_duration: 10s
   wait_for_api_connection_duration: 30s
-  wait_for_ota_update_mode_duration: 5s
   sleep_duration: 30min
 
 packages:
-  granzscientific.bm1-ota: github://granzscientific/esphome-tools/config/ota-sleep-control.yaml
+  granzscientific.bm1-ota: github://granzscientific/esphome-tools/config/sleep-control.yaml
 
 esphome:
   project:
@@ -58,7 +57,6 @@ api:
 # https://esphome.io/components/ota.html
 ota:
   - platform: esphome
-    # **** No OTA password by default.  You should add one in your config!
     on_error:
       - button.press: restart_button
 
